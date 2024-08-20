@@ -1,0 +1,32 @@
+[package]
+name = "j4-i2p-rs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Nigel Christian <nigel.christian@hiahatf.org>"]
+documentation = "https://docs.rs/j4-i2p-rs"
+description = "Java for I2P Rust bindings"
+repository = "https://github.com/kn0sys/j4-i2p-rs"
+license = "MIT"
+readme = "README.md"
+keywords = [
+    "java",
+    "i2p",
+    "j4rs",
+    "i2p-bindings",
+    "privacy"
+]
+
+[lib]
+name = "j4i2prs"
+path = "src/lib.rs"
+crate-type = ["lib"]
+
+[build-dependencies]
+j4rs       = "0.20.0"
+[dependencies]
+j4rs       = "0.20.0"
+log        = "0.4.0"
+
+[dev-dependencies]
+env_logger = "0.11.5"
+
