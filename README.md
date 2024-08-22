@@ -27,10 +27,10 @@ cd build
 ```
 
 ```bash
-mkidr -p ../../opt/j4-i2p-rs/jassets
+mkdir -p ../../opt/j4-i2p-rs/jassets
 ```
 
 ```bash
-for i in addressbook.jar i2ptunnel.jar i2p.jar mstreaming.jar router.jar sam.jar streaming.jar; do cp "$i" "../../opt/j4-i2p-rs/jassets"; done
+for i in addressbook.jar i2ptunnel.jar i2p.jar mstreaming.jar router.jar sam.jar streaming.jar; do cp "$i" "../../opt/j4-i2p-rs/jassets/"; done
 ```
 
