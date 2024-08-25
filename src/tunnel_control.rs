@@ -7,9 +7,7 @@ const BYTE_ARRAY_STREAM_CLASS: &str     = "java.io.ByteArrayOutputStream";
 const PATH_CLASS: &str                  = "java.nio.file.PATH";
 const FILES_CLASS: &str                 = "java.nio.file.Files";
 const FILE_CLASS: &str                  = "java.io.File";
-const I2P_CLIENT_CLASS: &str            = "net.i2p.I2PClient";
 const I2P_CLIENT_FACTORY_CLASS: &str    = "net.i2p.client.I2PClientFactory";
-const I2P_DESTINATION_CLASS: &str       = "net.i2p.data.Destination";
 const BASE64_CLASS: &str                = "net.i2p.data.Base64";
 const METHOD_CREATE_DESTINATION: &str   = "createDestination";
 const METHOD_ENCODE: &str               = "encode";
@@ -25,13 +23,13 @@ const METHOD_DECODE: &str               = "decode";
 ///
 /// and the base 32 destination address.
 #[derive(Debug, Default)]
-struct KeyPair {
+pub struct KeyPair {
     b32_dest: String,
     sk: String,
 }
 
 impl KeyPair {
-    fn generate() -> Result<KeyPair, errors::J4RsError> {
+    pub fn generate() -> Result<KeyPair, errors::J4RsError> {
         log::info!("Keypair::generate");
         let jvm = JvmBuilder::new().with_base_path(BASE_PATH).build()?;
         let sk_instance = jvm.create_instance(BYTE_ARRAY_STREAM_CLASS, InvocationArg::empty())?;
@@ -46,30 +44,59 @@ impl KeyPair {
     }
 }
 
-/// Server tunnels consist of a host, port and KeyPair
-pub struct ServerTunnel {
+#[derive(Debug)]
+/// Tunnel Types.
+///
+/// `HTTP` - http proxy for inbound/outbound proxied data
+///
+/// `server` - web application tunnels
+///
+/// `socks` - socks proxy tunnel
+pub enum TunnelType {
+    HTTP,
+    SERVER,
+    SOCKS,
+}
+
+impl TunnelType {
+    pub fn value(&self) -> String {
+        match *self {
+            TunnelType::HTTP => String::from("http"),
+            TunnelType::SERVER => String::from("server"),
+            TunnelType::SOCKS => String::from("socks"),
+        }
+    }
+}
+
+#[derive(Debug)]
+/// Tunnels consist of a host, port, KeyPair (server only) and type
+pub struct Tunnel {
     host: String,
     keypair: KeyPair,
     port: u16,
+    tunnel_type: TunnelType,
 }
 
-impl ServerTunnel {
-    fn new(keypair: KeyPair, host: String, port: u16) -> Self {
-        ServerTunnel {
+impl Tunnel {
+    /// Create a tunnel.
+    pub fn new(keypair: KeyPair, host: String, port: u16, tunnel_type: TunnelType) -> Self {
+        Tunnel {
             host,
             keypair,
-            port
+            port,
+            tunnel_type,
         }
     }
-    fn start(&self) -> Result<(), errors::J4RsError> {
-        log::info!("starting tunnel on {}", self.keypair.b32_dest);
+    /// Start a server tunnel.
+    pub fn start_server(&self) -> Result<(), errors::J4RsError> {
+        log::info!("starting {} tunnel on {}", self.tunnel_type.value(), self.keypair.b32_dest);
         let jvm = JvmBuilder::new().with_base_path(BASE_PATH).build()?;
         let mut data = [0u8; 32];
         rand::thread_rng().fill_bytes(&mut data);
         let uuid = hex::encode(data);
         let sk_path = format!("sk.{}.dat", uuid);
         let path = jvm.invoke_static(PATH_CLASS, METHOD_OF, &[InvocationArg::try_from(&sk_path)?])?;
-        let b64_decode = jvm.invoke_static(BASE64_CLASS, METHOD_DECODE, &[InvocationArg::try_from(self.keypair.b32_dest.clone())?])?;
+        let b64_decode = jvm.invoke_static(BASE64_CLASS, METHOD_DECODE, &[InvocationArg::try_from(self.keypair.sk.clone())?])?;
         let _ = jvm.invoke_static(FILES_CLASS, METHOD_WRITE, &[InvocationArg::from(path), InvocationArg::from(b64_decode)])?;
         let file = jvm.create_instance(FILE_CLASS, &[InvocationArg::try_from(&sk_path)?])?;
         let _ = jvm.invoke(&file, METHOD_DELETE_ON_EXIT, InvocationArg::empty())?;
@@ -77,7 +104,41 @@ impl ServerTunnel {
         let args: &[String] = &["-die".to_string(), "-nocli".to_string(), "-e".to_string(), server_arg];
         let _ = jvm.create_instance(I2P_TUNNEL_CLASS, &[InvocationArg::try_from(args)?])?;
         Ok(())
-    } 
+    }
+    /// Start the I2P HTTP Proxy.
+    pub fn start_http(&self) -> Result<(), errors::J4RsError> {
+        log::info!("starting {} proxy tunnel on port {}", self.tunnel_type.value(), self.port);
+        let jvm = JvmBuilder::new().with_base_path(BASE_PATH).build()?;
+        let server_arg = format!("httpclient {}", self.port);
+        let args: &[String] = &[
+            "-die".to_string(),
+            "-nocli".to_string(),
+            "-e".to_string(),
+            "config localhost 7654".to_string(),
+            "-e".to_string(),
+            server_arg
+        ];
+        let _ = jvm.create_instance(I2P_TUNNEL_CLASS, &[InvocationArg::try_from(args)?])?;
+        Ok(())
+    }
+    /// Start the SOCKS proxy.
+    pub fn start_socks(&self) -> Result<(), errors::J4RsError> {
+        log::info!("starting {} proxy tunnel on port {}", self.tunnel_type.value(), self.port);
+        let jvm = JvmBuilder::new().with_base_path(BASE_PATH).build()?;
+        let server_arg = format!("sockstunnel {}", self.port);
+        let args: &[String] = &[
+            "-die".to_string(),
+            "-nocli".to_string(),
+            "-e".to_string(),
+            server_arg
+        ];
+        let _ = jvm.create_instance(I2P_TUNNEL_CLASS, &[InvocationArg::try_from(args)?])?;
+        Ok(())
+    }
+    /// Get the Base 32 destination of the server tunnel.
+    pub fn get_destination(&self) -> String {
+        String::from(&self.keypair.b32_dest)
+    }
 }
 
 
@@ -89,8 +150,7 @@ mod tests {
     fn generate_keypair() -> Result<(), errors::J4RsError> {
         env_logger::init();
         let kp = KeyPair::generate()?;
-        log::debug!("keypair: {:?}", kp);
-        assert!(!kp.sk.is_empty());
+        assert!(kp.b32_dest.contains(".b32.i2p"));
         Ok(())
     }
 }
