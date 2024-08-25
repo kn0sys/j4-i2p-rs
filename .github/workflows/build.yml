@@ -1,0 +1,25 @@
+name: build
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install dependencies
+      run: |
+        rustup toolchain install nightly
+    - name: build, clippy and test
+      run: RUSTFLAGS="-Z threads=4" cargo +nightly build --future-incompat-report & cargo clippy && cargo test
