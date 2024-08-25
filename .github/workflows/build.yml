@@ -18,8 +18,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
     - name: Install dependencies
       run: |
         rustup toolchain install nightly
+        sudo apt install ant gettext
+        cd i2p && ant buildRouter buildI2PTunnelJars buildSAM jbigi buildAddressbook
+        mkdir -p ../opt/j4-i2p-rs/jassets && cp build/* ../opt/j4-i2p-rs/jassets/
     - name: build, clippy and test
       run: RUSTFLAGS="-Z threads=4" cargo +nightly build --future-incompat-report & cargo clippy && cargo test
