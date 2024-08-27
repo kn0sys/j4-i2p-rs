@@ -23,6 +23,8 @@ Cargo.lock
 hostsdb.blockfile
 keyBackup/
 netDb/
+certificates/
+geoip/
 prngseed.rnd
 router.info
 router.keys.dat
