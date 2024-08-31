@@ -4,8 +4,7 @@ use rand::RngCore;
 const BASE_PATH: &str                   = "opt/j4-i2p-rs";
 const I2P_TUNNEL_CLASS: &str            = "net.i2p.i2ptunnel.I2PTunnel";
 const BYTE_ARRAY_STREAM_CLASS: &str     = "java.io.ByteArrayOutputStream";
-const PATH_CLASS: &str                  = "java.nio.file.Path";
-const FILES_CLASS: &str                 = "java.nio.file.Files";
+const FILE_OUTPUT_STREAM_CLASS: &str    = "java.io.FileOutputStream";
 const FILE_CLASS: &str                  = "java.io.File";
 const I2P_CLIENT_FACTORY_CLASS: &str    = "net.i2p.client.I2PClientFactory";
 const BASE64_CLASS: &str                = "net.i2p.data.Base64";
@@ -14,7 +13,7 @@ const METHOD_ENCODE: &str               = "encode";
 const METHOD_CREATE_CLIENT: &str        = "createClient";
 const METHOD_TO_BASE32: &str            = "toBase32";
 const METHOD_GET_SK: &str               = "getSk";
-const METHOD_OF: &str                   = "of";
+const METHOD_CLOSE: &str                   = "close";
 const METHOD_WRITE: &str                = "write";
 const METHOD_DELETE_ON_EXIT: &str       = "deleteOnExit";
 const METHOD_DECODE: &str               = "decode";
@@ -115,13 +114,14 @@ impl Tunnel {
     fn start_server(&self) -> Result<(), errors::J4RsError> {
         log::info!("starting {} tunnel on {}", self.tunnel_type.value(), self.keypair.b32_dest);
         let jvm = JvmBuilder::new().with_base_path(BASE_PATH).build()?;
-        let mut data = [0u8; 32];
+        let mut data = [0u8; 16];
         rand::thread_rng().fill_bytes(&mut data);
         let uuid = hex::encode(data);
         let sk_path = format!("sk.{}.dat", uuid);
-        let path = jvm.invoke_static(PATH_CLASS, METHOD_OF, &[InvocationArg::try_from(&sk_path)?])?;
         let b64_decode = jvm.invoke_static(BASE64_CLASS, METHOD_DECODE, &[InvocationArg::try_from(self.keypair.sk.clone())?])?;
-        let _ = jvm.invoke_static(FILES_CLASS, METHOD_WRITE, &[InvocationArg::from(path), InvocationArg::from(b64_decode)])?;
+        let file_output_stream = jvm.create_instance(FILE_OUTPUT_STREAM_CLASS, &[InvocationArg::try_from(&sk_path)?])?;
+        let _ = jvm.invoke(&file_output_stream, METHOD_WRITE, &[InvocationArg::from(b64_decode)])?;
+        let _ = jvm.invoke(&file_output_stream, METHOD_CLOSE, InvocationArg::empty())?;
         let file = jvm.create_instance(FILE_CLASS, &[InvocationArg::try_from(&sk_path)?])?;
         let _ = jvm.invoke(&file, METHOD_DELETE_ON_EXIT, InvocationArg::empty())?;
         let array = jvm.create_java_array("java.lang.String", &[

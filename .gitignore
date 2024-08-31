@@ -27,6 +27,7 @@ certificates/
 geoip/
 prngseed.rnd
 router.info
-router.keys.dat
+*.dat
 *.ping
 opt/
+main.rs
