@@ -9,7 +9,7 @@ pub const METHOD_IS_ALIVE: &str = "isAlive";
 /// Shutdown the router.
 pub const METHOD_SHUTDOWN: &str = "shutdownGracefully";
 /// Pre-check router before starting tunnel operations.
-const METHOD_IS_RUNNING: &str = "isRunning";
+const METHOD_IS_RUNNING: &str   = "isRunning";
 
 /// Wrapper for net.i2p.router
 pub struct Wrapper {

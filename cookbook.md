@@ -40,7 +40,8 @@ where P: AsRef<Path>, {
 
 // fake app, replace println! with logging
 fn main() -> Result<(), j4rs::errors::J4RsError> {
-    env_logger::init();
+    env_logger::init(); 
+    log::debug!("{}", std::env::current_dir()?.display());
     let r = rw::Wrapper::create_router()?;
     let mut l: Listener = Default::default();
     let run_tx = l.run_tx.clone();
@@ -65,7 +66,7 @@ fn main() -> Result<(), j4rs::errors::J4RsError> {
             if let Ok(run) = l.run_rx.try_recv() {
                 if run {
                     println!("starting router");
-                    // r.invoke_router(rw::METHOD_RUN).unwrap_or_else(|_| println!("failed to run router"));
+                    r.invoke_router(rw::METHOD_RUN).unwrap_or_else(|_| println!("failed to run router"));
                 }
             }
             if let Ok(shutdown) = l.shutdown_rx.try_recv() {
@@ -75,7 +76,7 @@ fn main() -> Result<(), j4rs::errors::J4RsError> {
                     break;
                 }
             }
-            // std::thread::sleep(std::time::Duration::from_secs(240));
+            std::thread::sleep(std::time::Duration::from_secs(600));
             if !l.is_running {
                 // check router config
                 if let Ok(lines) = read_lines("./router.config") {
@@ -87,10 +88,9 @@ fn main() -> Result<(), j4rs::errors::J4RsError> {
                             println!("this port was randomly assigned, keep it private");
                             l.is_running = true;
                             // start the http proxy
-                            //std::thread::sleep(std::time::Duration::from_secs(600));
-                            let http_proxy: tc::Tunnel = tc::Tunnel::new("127.0.0.1".to_string(), 4444, tc::TunnelType::Http)
+                            let http_proxy: tc::Tunnel = tc::Tunnel::new("127.0.0.1".to_string(), 4455, tc::TunnelType::Http)
                                     .unwrap_or_default();
-                            //let _ = http_proxy.start();
+                            let _ = http_proxy.start();
                             println!("http proxy on port {}", http_proxy.get_port());
                             // start the tunnel
                             let app_tunnel: tc::Tunnel = tc::Tunnel::new("127.0.0.1".to_string(), 3000, tc::TunnelType::Server)

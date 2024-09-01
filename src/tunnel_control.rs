@@ -5,7 +5,6 @@ const BASE_PATH: &str                   = "opt/j4-i2p-rs";
 const I2P_TUNNEL_CLASS: &str            = "net.i2p.i2ptunnel.I2PTunnel";
 const BYTE_ARRAY_STREAM_CLASS: &str     = "java.io.ByteArrayOutputStream";
 const FILE_OUTPUT_STREAM_CLASS: &str    = "java.io.FileOutputStream";
-const FILE_CLASS: &str                  = "java.io.File";
 const I2P_CLIENT_FACTORY_CLASS: &str    = "net.i2p.client.I2PClientFactory";
 const BASE64_CLASS: &str                = "net.i2p.data.Base64";
 const METHOD_CREATE_DESTINATION: &str   = "createDestination";
@@ -13,9 +12,8 @@ const METHOD_ENCODE: &str               = "encode";
 const METHOD_CREATE_CLIENT: &str        = "createClient";
 const METHOD_TO_BASE32: &str            = "toBase32";
 const METHOD_GET_SK: &str               = "getSk";
-const METHOD_CLOSE: &str                   = "close";
+const METHOD_CLOSE: &str                = "close";
 const METHOD_WRITE: &str                = "write";
-const METHOD_DELETE_ON_EXIT: &str       = "deleteOnExit";
 const METHOD_DECODE: &str               = "decode";
 
 /// Keypair contains the secret key `sk`
@@ -122,13 +120,13 @@ impl Tunnel {
         let file_output_stream = jvm.create_instance(FILE_OUTPUT_STREAM_CLASS, &[InvocationArg::try_from(&sk_path)?])?;
         let _ = jvm.invoke(&file_output_stream, METHOD_WRITE, &[InvocationArg::from(b64_decode)])?;
         let _ = jvm.invoke(&file_output_stream, METHOD_CLOSE, InvocationArg::empty())?;
-        let file = jvm.create_instance(FILE_CLASS, &[InvocationArg::try_from(&sk_path)?])?;
-        let _ = jvm.invoke(&file, METHOD_DELETE_ON_EXIT, InvocationArg::empty())?;
+        let cwd_path = std::env::current_dir()?;
+        let cwd = cwd_path.to_str().unwrap_or_default();
         let array = jvm.create_java_array("java.lang.String", &[
             InvocationArg::try_from("-die")?,
             InvocationArg::try_from("-nocli")?,
             InvocationArg::try_from("-e")?,
-            InvocationArg::try_from(["server", &format!("{} {} {}", self.host, self.port, &sk_path)].join(" "))?
+            InvocationArg::try_from(["server", &format!("{} {} {}/{}", self.host, self.port, cwd, &sk_path)].join(" "))?
         ])?;
         let _ = jvm.create_instance(I2P_TUNNEL_CLASS, &[InvocationArg::from(array)])?;
         Ok(())
