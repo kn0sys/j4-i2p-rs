@@ -1,5 +1,6 @@
 use j4rs::*;
 use crate::jvm::new as new_jvm;
+use crate::error as e;
 
 const ROUTER_CLASS: &str        = "net.i2p.router.Router";
 /// Start a router instance.
@@ -22,10 +23,13 @@ impl Wrapper {
     /// therefore it is up to the caller to handle threading
     ///
     /// and the management of the router lifetime.
-    pub fn create_router() -> Result<Self, errors::J4RsError> {
+    pub fn create_router() -> Result<Self, e::J4I2PRSError> {
         log::info!("create_router");
         let jvm = new_jvm()?;
-        let router = jvm.create_instance(ROUTER_CLASS, InvocationArg::empty())?;
+        let router = jvm.create_instance(
+            ROUTER_CLASS,
+            InvocationArg::empty()
+        ).map_err(e::J4I2PRSError::J4rs)?;
         Ok(Wrapper {router})
     }
     /// Invoke methods on a router instance.
@@ -35,18 +39,25 @@ impl Wrapper {
     /// are the available for starting, checking status
     /// 
     /// and shutting down the router respectively.
-    pub fn invoke_router(&self, method_name: &str) -> Result<(), errors::J4RsError> {
+    pub fn invoke_router(&self, method_name: &str) -> Result<(), e::J4I2PRSError> {
         log::info!("invoke_router::{}", method_name);
         let jvm = new_jvm()?;
-        let _ = jvm.invoke(&self.router, method_name, InvocationArg::empty())?;
+        let _ = jvm.invoke(
+            &self.router, method_name,
+            InvocationArg::empty()
+        ).map_err(e::J4I2PRSError::J4rs)?;
         Ok(())
     }
     /// Verify that the router is running before
-    pub fn is_running(&self) -> Result<bool, errors::J4RsError> {
+    pub fn is_running(&self) -> Result<bool, e::J4I2PRSError> {
         log::info!("is_running");
         let jvm = new_jvm()?;
-        let is_running = jvm.invoke(&self.router, METHOD_IS_RUNNING, InvocationArg::empty())?;
-        let result: bool = jvm.to_rust(is_running)?;
+        let is_running = jvm.invoke(
+            &self.router,
+            METHOD_IS_RUNNING,
+            InvocationArg::empty()
+        ).map_err(e::J4I2PRSError::J4rs)?;
+        let result: bool = jvm.to_rust(is_running).map_err(e::J4I2PRSError::J4rs)?;
         Ok(result)
     }
 }
