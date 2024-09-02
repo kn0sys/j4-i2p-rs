@@ -21,9 +21,9 @@ Cargo.lock
 *.log
 **/*.jar
 hostsdb.blockfile
+peerProfiles/
 keyBackup/
 netDb/
-certificates/
 geoip/
 prngseed.rnd
 router.info

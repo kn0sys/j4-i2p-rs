@@ -1,7 +1,7 @@
 use j4rs::*;
 use rand::RngCore;
+use crate::jvm::new as new_jvm;
 
-const BASE_PATH: &str                   = "opt/j4-i2p-rs";
 const I2P_TUNNEL_CLASS: &str            = "net.i2p.i2ptunnel.I2PTunnel";
 const BYTE_ARRAY_STREAM_CLASS: &str     = "java.io.ByteArrayOutputStream";
 const FILE_OUTPUT_STREAM_CLASS: &str    = "java.io.FileOutputStream";
@@ -31,7 +31,7 @@ impl KeyPair {
     /// server tunnel.
     fn generate() -> Result<KeyPair, errors::J4RsError> {
         log::info!("Keypair::generate");
-        let jvm = JvmBuilder::new().with_base_path(BASE_PATH).build()?;
+        let jvm = new_jvm()?;
         let sk_instance = jvm.create_instance(BYTE_ARRAY_STREAM_CLASS, InvocationArg::empty())?;
         let client = jvm.invoke_static(I2P_CLIENT_FACTORY_CLASS, METHOD_CREATE_CLIENT, InvocationArg::empty())?;
         let destination = jvm.invoke(&client, METHOD_CREATE_DESTINATION, &[&InvocationArg::from(sk_instance)])?;
@@ -111,7 +111,7 @@ impl Tunnel {
     /// Start a server tunnel.
     fn start_server(&self) -> Result<(), errors::J4RsError> {
         log::info!("starting {} tunnel on {}", self.tunnel_type.value(), self.keypair.b32_dest);
-        let jvm = JvmBuilder::new().with_base_path(BASE_PATH).build()?;
+        let jvm = new_jvm()?;
         let mut data = [0u8; 16];
         rand::thread_rng().fill_bytes(&mut data);
         let uuid = hex::encode(data);
@@ -134,7 +134,7 @@ impl Tunnel {
     /// Start the I2P HTTP Proxy.
     fn start_http(&self) -> Result<(), errors::J4RsError> {
         log::info!("starting {} proxy tunnel on port {}", self.tunnel_type.value(), self.port);
-        let jvm = JvmBuilder::new().with_base_path(BASE_PATH).build()?;
+        let jvm = new_jvm()?;
         let array = jvm.create_java_array("java.lang.String", &[
             InvocationArg::try_from("-die")?,
             InvocationArg::try_from("-nocli")?,
@@ -149,7 +149,7 @@ impl Tunnel {
     /// Start the SOCKS proxy.
     fn start_socks(&self) -> Result<(), errors::J4RsError> {
         log::info!("starting {} proxy tunnel on port {}", self.tunnel_type.value(), self.port);
-        let jvm = JvmBuilder::new().with_base_path(BASE_PATH).build()?;
+        let jvm = new_jvm()?;
         let array = jvm.create_java_array("java.lang.String", &[
             InvocationArg::try_from("-die")?,
             InvocationArg::try_from("-nocli")?,

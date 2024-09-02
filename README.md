@@ -22,9 +22,9 @@ build the jars
 cd i2p && ant buildRouter buildI2PTunnelJars buildSAM jbigi buildAddressbook
 ```
 
-copy jars to the jassets directory
+copy jars to the jassets directory (`export J4I2PRS_BASE_PATH=/path/to/jassets`)
 
 ```bash
-mkdir -p ../opt/j4-i2p-rs/jassets && cp build/* ../opt/j4-i2p-rs/jassets/
+mkdir -p /tmp/opt/j4-i2p-rs/jassets && cp build/* /tmp/opt/j4-i2p-rs/jassets/
 ```
 
