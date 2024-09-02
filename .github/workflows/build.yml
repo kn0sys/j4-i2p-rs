@@ -27,4 +27,4 @@ jobs:
         cd i2p && ant buildRouter buildI2PTunnelJars buildSAM jbigi buildAddressbook
         mkdir -p /tmp/opt/j4-i2p-rs/jassets && cp build/* /tmp/opt/j4-i2p-rs/jassets/
     - name: build, clippy and test
-      run: RUSTFLAGS="-Z threads=4" cargo +nightly build --future-incompat-report & cargo clippy && cargo test
+      run: RUSTFLAGS="-Z threads=4" cargo +nightly build --future-incompat-report && cargo clippy && cargo test
