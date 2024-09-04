@@ -109,16 +109,19 @@ impl Tunnel {
         }
     }
     /// Start the associated tunnel based on type
-    pub fn start(&self) -> Result<(), e::J4I2PRSError> {
+    /// 
+    /// `keypair` - Pass an optional keypair for an existing server tunnel.
+    pub fn start(&self, keypair: Option<String>) -> Result<(), e::J4I2PRSError> {
         match self.tunnel_type {
             TunnelType::Http => self.start_http(),
-            TunnelType::Server => self.start_server(),
+            TunnelType::Server => self.start_server(keypair),
             TunnelType::Socks => self.start_socks(),
         }
     }
     /// Start a server tunnel.
-    fn start_server(&self) -> Result<(), e::J4I2PRSError> {
+    fn start_server(&self, keypair: Option<String>) -> Result<(), e::J4I2PRSError> {
         log::info!("starting {} tunnel on {}", self.tunnel_type.value(), self.keypair.b32_dest);
+        let kp = if keypair.is_some() { keypair.unwrap_or(String::new()) } else { self.keypair.sk.clone() };
         let jvm = new_jvm()?;
         let mut data = [0u8; 16];
         rand::thread_rng().fill_bytes(&mut data);
@@ -126,7 +129,7 @@ impl Tunnel {
         let sk_path = format!("sk.{}.dat", uuid);
         let b64_decode = jvm.invoke_static(
             BASE64_CLASS, METHOD_DECODE,
-            &[InvocationArg::try_from(self.keypair.sk.clone()).map_err(e::J4I2PRSError::J4rs)?]
+            &[InvocationArg::try_from(kp).map_err(e::J4I2PRSError::J4rs)?]
         ).map_err(e::J4I2PRSError::J4rs)?;
         let file_output_stream = jvm.create_instance(
             FILE_OUTPUT_STREAM_CLASS,
