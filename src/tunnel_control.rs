@@ -62,6 +62,7 @@ impl KeyPair {
 /// `Socks` - socks proxy tunnel
 pub enum TunnelType {
     Http,
+    ExistingServer,
     Server,
     Socks,
 }
@@ -70,6 +71,7 @@ impl TunnelType {
     pub fn value(&self) -> String {
         match *self {
             TunnelType::Http => String::from("http"),
+            TunnelType::ExistingServer => String::from("server"),
             TunnelType::Server => String::from("server"),
             TunnelType::Socks => String::from("socks"),
         }
@@ -114,14 +116,15 @@ impl Tunnel {
     pub fn start(&self, keypair: Option<String>) -> Result<(), e::J4I2PRSError> {
         match self.tunnel_type {
             TunnelType::Http => self.start_http(),
-            TunnelType::Server => self.start_server(keypair),
+            TunnelType::ExistingServer => self.start_server(keypair),
+            TunnelType::Server => self.start_server(None),
             TunnelType::Socks => self.start_socks(),
         }
     }
     /// Start a server tunnel.
     fn start_server(&self, keypair: Option<String>) -> Result<(), e::J4I2PRSError> {
         log::info!("starting {} tunnel on {}", self.tunnel_type.value(), self.keypair.b32_dest);
-        let kp = if keypair.is_some() { keypair.unwrap_or(String::new()) } else { self.keypair.sk.clone() };
+        let kp = if keypair.is_some() { keypair.unwrap_or_default() } else { self.keypair.sk.clone() };
         let jvm = new_jvm()?;
         let mut data = [0u8; 16];
         rand::thread_rng().fill_bytes(&mut data);
