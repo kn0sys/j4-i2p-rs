@@ -186,9 +186,13 @@ impl Tunnel {
         let _ = jvm.create_instance(I2P_TUNNEL_CLASS, &[InvocationArg::from(array)]).map_err(e::J4I2PRSError::J4rs)?;
         Ok(())
     }
-    /// Get the Base 32 destination of the server tunnel.
+    /// Get the base 32 destination of the server tunnel.
     pub fn get_destination(&self) -> String {
         String::from(&self.keypair.b32_dest)
+    }
+    /// Get the secret key of the server tunnel. Necessary for persisting tunnels
+    pub fn get_sk(&self) -> String {
+        String::from(&self.keypair.sk)
     }
     /// Get the port for the tunnel.
     pub fn get_port(&self) -> u16 {
