@@ -2,6 +2,7 @@
 use std::{thread,fs::File, io::{self, BufRead}, path::Path};
 use j4i2prs::router_wrapper as rw;
 use j4i2prs::tunnel_control as tc;
+use j4i2prs::error as e;
 
 use std::sync::mpsc::{
     Receiver,
@@ -12,21 +13,16 @@ struct Listener {
     is_running: bool,
     run_tx: Sender<bool>,
     run_rx: Receiver<bool>,
-    shutdown_tx: Sender<bool>,
-    shutdown_rx: Receiver<bool>,
 }
 
 impl Default for Listener {
     fn default() -> Self {
         let is_running = false;
         let (run_tx, run_rx) = std::sync::mpsc::channel();
-        let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel();
         Listener {
             is_running,
             run_tx,
             run_rx,
-            shutdown_tx,
-            shutdown_rx,
         }
     }
 }
@@ -39,12 +35,11 @@ where P: AsRef<Path>, {
 }
 
 // fake app, replace println! with logging
-fn main() -> Result<(), j4rs::errors::J4RsError> {
+fn main() -> Result<(), e::J4I2PRSError> {
     //env_logger::init(); 
     let r = rw::Wrapper::create_router()?;
     let mut l: Listener = Default::default();
     let run_tx = l.run_tx.clone();
-    let shutdown_tx = l.shutdown_tx.clone();
     let run_handle = thread::spawn(move || {
         println!("run thread started");
         run_tx.send(true).unwrap_or_else(|_| println!("failed to run router"));
@@ -68,13 +63,6 @@ fn main() -> Result<(), j4rs::errors::J4RsError> {
                     r.invoke_router(rw::METHOD_RUN).unwrap_or_else(|_| println!("failed to run router"));
                 }
             }
-            if let Ok(shutdown) = l.shutdown_rx.try_recv() {
-                if shutdown {
-                    println!("stopping router");
-                    r.invoke_router(rw::METHOD_SHUTDOWN).unwrap_or_else(|_| println!("failed to shutdown router"));
-                    break;
-                }
-            }
             if !l.is_running {
                 let is_router_on = r.is_running().unwrap_or_default();
                 if !is_router_on {
@@ -94,13 +82,13 @@ fn main() -> Result<(), j4rs::errors::J4RsError> {
                                 // start the http proxy
                                 let http_proxy: tc::Tunnel = tc::Tunnel::new("127.0.0.1".to_string(), 4455, tc::TunnelType::Http)
                                     .unwrap_or_default();
-                                let _ = http_proxy.start();
+                                let _ = http_proxy.start(None);
                                 println!("http proxy on port {}", http_proxy.get_port());
                                 // start the tunnel
                                 let app_tunnel: tc::Tunnel = tc::Tunnel::new("127.0.0.1".to_string(), 3000, tc::TunnelType::Server)
                                     .unwrap_or_default();
                                 println!("destination: {}", app_tunnel.get_destination());
-                                let _ = app_tunnel.start();
+                                let _ = app_tunnel.start(None);
                             }
                         }
                     }
@@ -110,9 +98,7 @@ fn main() -> Result<(), j4rs::errors::J4RsError> {
     });
     println!("waiting for work...");
     let _ = run_handle.join();
-    // let _ = shutdown_handle.join();
     let _ = listener_handle.join();
     Ok(())
-
 }
 ```

@@ -129,7 +129,7 @@ impl Tunnel {
         let mut data = [0u8; 16];
         rand::thread_rng().fill_bytes(&mut data);
         let uuid = hex::encode(data);
-        let sk_path = format!("sk.{}.dat", uuid);
+        let sk_path = format!("/tmp/sk.{}.dat", uuid);
         let b64_decode = jvm.invoke_static(
             BASE64_CLASS, METHOD_DECODE,
             &[InvocationArg::try_from(kp).map_err(e::J4I2PRSError::J4rs)?]
@@ -147,13 +147,11 @@ impl Tunnel {
             &file_output_stream,
             METHOD_CLOSE,
             InvocationArg::empty()).map_err(e::J4I2PRSError::J4rs)?;
-        let cwd_path = std::env::current_dir().map_err(e::J4I2PRSError::StdIo)?;
-        let cwd = cwd_path.to_str().unwrap_or_default();
         let array = jvm.create_java_array("java.lang.String", &[
             InvocationArg::try_from("-die").map_err(e::J4I2PRSError::J4rs)?,
             InvocationArg::try_from("-nocli").map_err(e::J4I2PRSError::J4rs)?,
             InvocationArg::try_from("-e").map_err(e::J4I2PRSError::J4rs)?,
-            InvocationArg::try_from(["server", &format!("{} {} {}/{}", self.host, self.port, cwd, &sk_path)].join(" ")).map_err(e::J4I2PRSError::J4rs)?
+            InvocationArg::try_from(["server", &format!("{} {} {}", self.host, self.port, &sk_path)].join(" ")).map_err(e::J4I2PRSError::J4rs)?
         ]).map_err(e::J4I2PRSError::J4rs)?;
         let _ = jvm.create_instance(I2P_TUNNEL_CLASS, &[InvocationArg::from(array)]).map_err(e::J4I2PRSError::J4rs)?;
         Ok(())
