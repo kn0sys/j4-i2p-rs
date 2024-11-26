@@ -1,6 +1,6 @@
 [package]
 name = "j4-i2p-rs"
-version = "0.2.0-alpha"
+version = "0.3.0-alpha"
 edition = "2021"
 authors = ["Nigel Christian <nigel.christian@hiahatf.org>"]
 documentation = "https://docs.rs/j4-i2p-rs"
@@ -28,7 +28,7 @@ hex        = "0.4.3"
 j4rs       = "0.20.0"
 log        = "0.4.0"
 rand       = "0.8.5"
-thiserror  = "1.0.63"
+thiserror  = "2.0.3"
 
 [dev-dependencies]
 env_logger = "0.11.5"
