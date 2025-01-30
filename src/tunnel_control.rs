@@ -127,7 +127,7 @@ impl Tunnel {
         let kp = if keypair.is_some() { keypair.unwrap_or_default() } else { self.keypair.sk.clone() };
         let jvm = new_jvm()?;
         let mut data = [0u8; 16];
-        rand::thread_rng().fill_bytes(&mut data);
+        rand::rng().fill_bytes(&mut data);
         let uuid = hex::encode(data);
         let sk_path = format!("/tmp/sk.{}.dat", uuid);
         let b64_decode = jvm.invoke_static(
