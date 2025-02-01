@@ -27,4 +27,8 @@ copy jars to the jassets directory (`export J4I2PRS_BASE_PATH=/path/to/jassets`)
 ```bash
 mkdir -p ../opt/j4-i2p-rs/jassets && cp build/* ../opt/j4-i2p-rs/jassets/
 ```
+NOTE: ensure opt is in the root of your project
 
+```bash
+cp -r j4-i2p-rs/opt .
+```
